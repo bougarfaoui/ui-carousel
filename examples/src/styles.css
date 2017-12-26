@@ -1,0 +1,26 @@
+/* You can add global styles to this file, and also import other style files */
+/* img{
+    width: 100%;
+    user-drag: none; 
+    -moz-user-drag : none;
+    -webkit-user-drag: none; 
+    user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -o-user-select: none;
+}
+ */
+
+html, body{
+    padding: 0;
+    margin: 0;
+}
+body{
+    background: rgb(252, 252, 252);
+}
+
+*{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    
+}

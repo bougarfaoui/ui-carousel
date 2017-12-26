@@ -1,0 +1,21 @@
+<div style="text-align:center; margin:10px;font-size: 25px; ">
+    Custom dots
+</div>
+
+<ui-carousel #uiCarousel [infinite]="true" [fade]="false" [speed]="200" height="300px" width="700px" [dots]="false">
+    <ui-carousel-item>
+        <img src="./assets/3.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <ui-carousel-item>
+        <img src="./assets/1.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <ui-carousel-item>
+        <img src="./assets/2.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <div class="button">Code source</div>
+    <div class="dots">
+        <div class="dot" (click)="uiCarousel.goTo(0)"></div>
+        <div class="dot" (click)="uiCarousel.goTo(1)"></div>
+        <div class="dot" (click)="uiCarousel.goTo(2)"></div>
+    </div>
+</ui-carousel>

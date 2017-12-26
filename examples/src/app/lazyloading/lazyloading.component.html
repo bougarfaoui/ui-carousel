@@ -1,0 +1,16 @@
+<div style="text-align:center; margin:10px;font-size: 25px; ">
+    Lazy Loading
+</div>
+
+<ui-carousel [infinite]="false" [fade]="false" [speed]="200" height="300px" width="700px">
+    <ui-carousel-item>
+        <img ui-lazy-load="./assets/5.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <ui-carousel-item>
+        <img ui-lazy-load="./assets/4.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <ui-carousel-item>
+        <img ui-lazy-load="./assets/6.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <div class="button">Code source</div>
+</ui-carousel>

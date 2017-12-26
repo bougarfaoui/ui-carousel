@@ -1,0 +1,23 @@
+<div style="text-align:center; margin:10px;font-size: 25px; ">
+    Custom arrows
+</div>
+
+<ui-carousel #uiCarousel [infinite]="true" [fade]="false" [speed]="200" [arrows]="false" height="300px" width="700px">
+    <ui-carousel-item>
+        <img src="./assets/2.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <ui-carousel-item>
+        <img src="./assets/1.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <ui-carousel-item>
+        <img src="./assets/3.jpg" alt="" draggable="false">
+    </ui-carousel-item>
+    <div class="button">Code source</div>
+
+    <div class="left-arrow" (click)="uiCarousel.prev()">
+        <img src="assets/arrow-left.png" alt="">
+    </div>
+    <div class="right-arrow" (click)="uiCarousel.next()">
+        <img src="assets/arrow-right.png" alt="">
+    </div>
+</ui-carousel>
