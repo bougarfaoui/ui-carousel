@@ -3,14 +3,16 @@
 Carousel component for angular 4 and 5
 
 ## 💥 Features :
-- 👌 Support touch events
-- ⚡️Image lazy loading
-- 😎Easy to use API
+- 👌 Supports touch events
+- ⚡️ Image lazy loading
+- 😈 No third party library
+- 😎 Easy to use API
 ## Install
 ``` npm install ui-carousel --save ```
 
 ## Demo :
-***[Demo](http://socket.io/)***
+
+## [Demo](https://bougarfaoui.github.io/ui-carousel/)
 
 ## Example :
 
@@ -42,3 +44,7 @@ Inputs           | Type            | Description
      <img [ui-lazy-load]="src">
   </ui-carousel-item>
 ```
+
+### Licence : 
+
+MIT
