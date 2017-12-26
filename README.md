@@ -1,6 +1,6 @@
-﻿# ui-carousel
+﻿# 🌀ui-carousel 
 
-Carousel component for angular 4 and 5
+✨  Carousel component for angular 4 and 5
 
 ## 💥 Features :
 - 👌 Supports touch events
