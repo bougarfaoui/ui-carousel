@@ -15,13 +15,13 @@
 ## [Demo](https://bougarfaoui.github.io/ui-carousel/)
 
 ## Example :
-
+```html
     <ui-carousel [infinite]="true" [fade]="false" [speed]="200" >
         <ui-carousel-item *ngFor="let item of items">
             <img [ui-lazy-load]="item.img">
         </ui-carousel-item>
     </ui-carousel>
-
+```
 ## API
 
 ### Inputs 
@@ -39,7 +39,7 @@ Inputs           | Type            | Description
 ### Directives : 
 
 ```[ui-lazy-load]``` : used to lazy load images in the carousel :
-```
+```html
   <ui-carousel-item>
      <img [ui-lazy-load]="src">
   </ui-carousel-item>
