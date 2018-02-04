@@ -16,8 +16,6 @@ import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/throttleTime';
 
 import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.component';
-import { Timeouts } from 'selenium-webdriver';
-import { Time } from '@angular/common/src/i18n/locale_data_api';
 
 @Component({
     selector: 'ui-carousel',
