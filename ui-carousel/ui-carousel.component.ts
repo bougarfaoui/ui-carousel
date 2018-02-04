@@ -16,14 +16,18 @@ import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/throttleTime';
 
 import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.component';
+import { Timeouts } from 'selenium-webdriver';
+import { Time } from '@angular/common/src/i18n/locale_data_api';
 
 @Component({
     selector: 'ui-carousel',
     template : `
+    <div (mouseenter)="(autoPlay)?autoPlayFunction(false):null" (mouseleave)="(autoPlay)?autoPlayFunction(true):null">
         <ng-content></ng-content>
         <dots *ngIf="isDotsVisible" [dots-count]="items.length" position="middle" [active-dot]="currentItemIndex" (on-click)="goTo($event)"></dots>
         <arrow *ngIf="isArrowsVisible" dir="left" (on-click)="prev()" [disabled]="false"></arrow>
         <arrow *ngIf="isArrowsVisible" dir="right" (on-click)="next()" [disabled]="false"></arrow>
+    </div>
     `,
     styles: [`
         :host{
@@ -40,6 +44,8 @@ export class UICarouselComponent implements OnInit {
     @Input() height: string = "300px";
     @Input() width: string = "100%";
     @Input() speed: number;
+    @Input() autoPlay: boolean = true;
+    @Input() autoPlaySpeed: number;
 
     @Input() infinite: boolean = true;
     @Input() fade: boolean = false;
@@ -50,6 +56,7 @@ export class UICarouselComponent implements OnInit {
 
     private _width: number;
     currentItemIndex: number = 0;
+    interval:any;
 
     private firstItemIndex: number; // the visual index of item and not necessary the index in the DOM
     private lastItemIndex: number; // ..
@@ -60,6 +67,10 @@ export class UICarouselComponent implements OnInit {
 
     ngOnInit() {
         this.speed = this.speed || 500;
+        this.autoPlaySpeed = this.autoPlaySpeed || 1500;
+        if(this.autoPlay){
+            this.autoPlayFunction(true);
+        }
         this.nextSubject.throttleTime(this.speed).subscribe(() => {
             if (!this.fade) {
                 this.slideLeft();
@@ -364,6 +375,18 @@ export class UICarouselComponent implements OnInit {
     ngOnDestroy(){
         this.nextSubject.unsubscribe();
         this.prevSubject.unsubscribe();
+    }
+
+    autoPlayFunction(boolean){
+        if(this.autoPlay){
+            if(boolean){
+                this.interval = setInterval(()=>{
+                    this.next();
+                }, this.autoPlaySpeed);
+            }else{
+                clearInterval(this.interval);
+            }
+        }
     }
 }
 
