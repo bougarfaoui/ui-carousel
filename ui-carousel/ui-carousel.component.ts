@@ -13,6 +13,7 @@ import {
 
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
+import { Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/operator/throttleTime';
 
 import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.component';
@@ -38,6 +39,7 @@ import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.co
 export class UICarouselComponent implements OnInit {
     private nextSubject: Subject<any> = new Subject<any>();
     private prevSubject: Subject<any> = new Subject<any>();
+    private subscriptions: Subscription;
     @Output() onChange: EventEmitter<any> = new EventEmitter<any>();
     @Input() height: string = "300px";
     @Input() width: string = "100%";
@@ -69,24 +71,24 @@ export class UICarouselComponent implements OnInit {
         if(this.autoPlay){
             this.autoPlayFunction(true);
         }
-        this.nextSubject.throttleTime(this.speed).subscribe(() => {
+        this.subscriptions.add(this.nextSubject.throttleTime(this.speed).subscribe(() => {
             if (!this.fade) {
                 this.slideLeft();
             } else {
                 this.fadeLeft();
             }
-        });
-        this.prevSubject.throttleTime(this.speed).subscribe(() => {
+        }));
+        this.subscriptions.add(this.prevSubject.throttleTime(this.speed).subscribe(() => {
             if (!this.fade) {
                 this.slideRight();
             } else {
                 this.fadeRight();
             }
-        });
-        this.onChange.subscribe((index: number) => {
+        }));
+        this.subscriptions.add(this.onChange.subscribe((index: number) => {
             let item = this.getItemByIndex(index);
             item.lazyLoad();
-        })
+        }));
     }
 
     ngAfterViewInit() {
@@ -107,7 +109,7 @@ export class UICarouselComponent implements OnInit {
                 item.disableTransition();
                 item.moveTo(item.position);
 
-                item.swiper.onSwipeLeft.subscribe((distance: number) => {
+                this.subscriptions.add(item.swiper.onSwipeLeft.subscribe((distance: number) => {
                     totalDistanceSwiped += Math.abs(distance);
                     let shortDistance = distance / Math.pow(totalDistanceSwiped, .4);
                     if (itemIndex === this.firstItemIndex && this.infinite) {
@@ -122,9 +124,9 @@ export class UICarouselComponent implements OnInit {
                         }
                         itm.moveTo(itm.currentPosition);
                     });
-                });
+                }));
 
-                item.swiper.onSwipeRight.subscribe((distance: number) => {
+                this.subscriptions.add(item.swiper.onSwipeRight.subscribe((distance: number) => {
                     totalDistanceSwiped += Math.abs(distance);
                     let shortDistance = distance / Math.pow(totalDistanceSwiped, .4);
                     if (itemIndex === this.lastItemIndex && this.infinite) {
@@ -139,28 +141,28 @@ export class UICarouselComponent implements OnInit {
                         }
                         itm.moveTo(itm.currentPosition);
                     });
-                });
+                }));
 
-                item.swiper.swipeLeft.subscribe(() => {
+                this.subscriptions.add(item.swiper.swipeLeft.subscribe(() => {
                     totalDistanceSwiped = 0;
                     this.slideLeft();
-                });
+                }));
 
-                item.swiper.swipeRight.subscribe(() => {
+                this.subscriptions.add(item.swiper.swipeRight.subscribe(() => {
                     totalDistanceSwiped = 0;
                     this.slideRight();
-                });
+                }));
 
-                item.swiper.onSwipeEnd.subscribe(() => {
+                this.subscriptions.add(item.swiper.onSwipeEnd.subscribe(() => {
                     totalDistanceSwiped = 0;
                     this.enableTransition();
                     this.slideToPrevPosition();
-                });
+                }));
 
-                item.swiper.onSwipeStart.subscribe(() => {
+                this.subscriptions.add(item.swiper.onSwipeStart.subscribe(() => {
                     totalDistanceSwiped = 0;
                     this.disableTransition();
-                });
+                }));
             });
         } else {
             this.items.forEach((item, index) => {
@@ -371,8 +373,7 @@ export class UICarouselComponent implements OnInit {
     }
 
     ngOnDestroy(){
-        this.nextSubject.unsubscribe();
-        this.prevSubject.unsubscribe();
+        this.subscriptions.unsubscribe();
     }
 
     autoPlayFunction(boolean){
