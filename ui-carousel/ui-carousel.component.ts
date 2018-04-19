@@ -39,7 +39,7 @@ import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.co
 export class UICarouselComponent implements OnInit {
     private nextSubject: Subject<any> = new Subject<any>();
     private prevSubject: Subject<any> = new Subject<any>();
-    private subscriptions: Subscription;
+    private subscriptions: Subscription = new Subscription();
     @Output() onChange: EventEmitter<any> = new EventEmitter<any>();
     @Input() height: string = "300px";
     @Input() width: string = "100%";
