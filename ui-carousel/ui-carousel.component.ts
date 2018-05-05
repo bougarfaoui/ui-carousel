@@ -8,21 +8,29 @@ import {
     HostBinding,
     HostListener,
     EventEmitter,
-    ElementRef
+    ElementRef,
+    ViewChild,
+    Renderer2,
+    ViewContainerRef,
+    ComponentFactoryResolver,
+    ComponentRef
 } from '@angular/core';
-
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
-import { Subscription } from 'rxjs/Subscription';
-import 'rxjs/add/operator/throttleTime';
+import { Subscription, Subject } from 'rxjs';
+import { throttleTime, debounceTime, switchMap } from 'rxjs/operators';
 
 import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.component';
+import { SwiperDirective } from '../directives/swiper.directive';
+import { timer } from 'rxjs/observable/timer';
 
 @Component({
     selector: 'ui-carousel',
-    template : `
+    template: `
     <div (mouseenter)="(autoPlay)?autoPlayFunction(false):null" (mouseleave)="(autoPlay)?autoPlayFunction(true):null">
-        <ng-content></ng-content>
+        <div #carouselTrack class="carousel-track" swiper [threshold]="tWidth">
+            <ng-container #front></ng-container>
+            <ng-content></ng-content>
+            <ng-container #end></ng-container>
+        </div>
         <dots *ngIf="isDotsVisible" [dots-count]="items.length" position="middle" [active-dot]="currentItemIndex" (on-click)="goTo($event)"></dots>
         <arrow *ngIf="isArrowsVisible" dir="left" (on-click)="prev()" [disabled]="false"></arrow>
         <arrow *ngIf="isArrowsVisible" dir="right" (on-click)="next()" [disabled]="false"></arrow>
@@ -34,142 +42,139 @@ import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.co
             overflow: hidden;
             position: relative;
         }
+        .carousel-track:before, .carousel-track:after {
+            display: table;
+            content: '';
+        }
+        .carousel-track:after {
+            clear: both;
+        }
     `],
 })
 export class UICarouselComponent implements OnInit {
     private nextSubject: Subject<any> = new Subject<any>();
     private prevSubject: Subject<any> = new Subject<any>();
-    private subscriptions: Subscription;
+    private transitionSubject: Subject<any> = new Subject<any>();
+    private subscriptions: Subscription = new Subscription();
     @Output() onChange: EventEmitter<any> = new EventEmitter<any>();
-    @Input() height: string = "300px";
-    @Input() width: string = "100%";
-    @Input() speed: number;
+    @Input() speed: number = 400;
     @Input() autoPlay: boolean = true;
-    @Input() autoPlaySpeed: number;
+    @Input() autoPlaySpeed: number = 5000;
+    @Input() thresholdFraction: number = 0.25;
 
     @Input() infinite: boolean = true;
-    @Input() fade: boolean = false;
     @Input('dots') isDotsVisible: boolean = true;
     @Input('arrows') isArrowsVisible: boolean = true;
 
+    @ViewChild('front', { read: ViewContainerRef }) front: ViewContainerRef;
+    @ViewChild('end', { read: ViewContainerRef }) end: ViewContainerRef;
+    @ViewChild('carouselTrack') carouselTrackEl: ElementRef;
+    @ViewChild(SwiperDirective) swiper: SwiperDirective;
     @ContentChildren(UICarouselItemComponent) items: QueryList<UICarouselItemComponent>;
 
     private _width: number;
-    currentItemIndex: number = 0;
-    interval:any;
-
-    private firstItemIndex: number; // the visual index of item and not necessary the index in the DOM
-    private lastItemIndex: number; // ..
+    private currentItemIndex: number = 0;
+    private offsetPosition: number = 0;
+    private frontClone: ComponentRef<UICarouselItemComponent>;
+    private backClone: ComponentRef<UICarouselItemComponent>;
+    private interval: any;
+    tWidth: number = 100;
 
     constructor(
-        private el: ElementRef
+        private el: ElementRef,
+        private renderer: Renderer2,
+        private resolver: ComponentFactoryResolver
     ) { }
 
     ngOnInit() {
-        this.speed = this.speed || 500;
-        this.autoPlaySpeed = this.autoPlaySpeed || 1500;
-        if(this.autoPlay){
+        if (this.autoPlay) {
             this.autoPlayFunction(true);
         }
-        this.subscriptions.add(this.nextSubject.throttleTime(this.speed).subscribe(() => {
-            if (!this.fade) {
-                this.slideLeft();
-            } else {
-                this.fadeLeft();
-            }
+        this.subscriptions.add(this.nextSubject.pipe(throttleTime(this.speed)).subscribe(() => {
+            this.slideLeft();
         }));
-        this.subscriptions.add(this.prevSubject.throttleTime(this.speed).subscribe(() => {
-            if (!this.fade) {
-                this.slideRight();
-            } else {
-                this.fadeRight();
-            }
+        this.subscriptions.add(this.prevSubject.pipe(throttleTime(this.speed)).subscribe(() => {
+            this.slideRight();
+        }));
+        this.subscriptions.add(this.transitionSubject.pipe(switchMap(() => timer(this.speed))).subscribe(() => {
+            this.disableTransition();
         }));
         this.subscriptions.add(this.onChange.subscribe((index: number) => {
             let item = this.getItemByIndex(index);
             item.lazyLoad();
         }));
+
+        this.carouselTrackEl = this.carouselTrackEl.nativeElement;
+        this._width = this.el.nativeElement.offsetWidth;
+        this.tWidth = this._width * this.thresholdFraction;
     }
 
     ngAfterViewInit() {
-        this.el.nativeElement.style.height = this.height;
-        this.el.nativeElement.style.width = this.width;
+        this.renderer.setStyle(this.carouselTrackEl, 'width', `${(this.items.length * 2) * this._width}px`);
+
         if (this.items && this.items.length > 0) {
             this.onChange.emit(0);
-            this._width = this.items.first.el.nativeElement.offsetWidth;
+            if (this.items.length > 1 && this.infinite) {
+                const factory = this.resolver.resolveComponentFactory(UICarouselItemComponent);
+                this.frontClone = this.end.createComponent(factory);
+                this.backClone = this.front.createComponent(factory);
+                this.frontClone.instance.el.nativeElement.innerHTML = this.items.first.el.nativeElement.innerHTML;
+                this.backClone.instance.el.nativeElement.innerHTML = this.items.last.el.nativeElement.innerHTML;
+                this.renderer.setStyle(this.frontClone.instance.el.nativeElement, 'width', this._width + "px");
+                this.renderer.setStyle(this.backClone.instance.el.nativeElement, 'width', this._width + "px");
+                this.offsetPosition = -this._width;
+                this.moveTo(0);
+            }
+            this.items.map(item => {
+                this.renderer.setStyle(item.el.nativeElement, 'width', this._width + "px");
+            })
         }
-        this.firstItemIndex = 0;
-        this.lastItemIndex = this.items.length - 1;
-        if (!this.fade) {
-            this.items.forEach((item, itemIndex) => {
-                let totalDistanceSwiped = 0;
-                item.speed = this.speed;
-                item.position = this._width * itemIndex;
-                item.currentPosition = item.position;
-                item.disableTransition();
-                item.moveTo(item.position);
 
-                this.subscriptions.add(item.swiper.onSwipeLeft.subscribe((distance: number) => {
-                    totalDistanceSwiped += Math.abs(distance);
-                    let shortDistance = distance / Math.pow(totalDistanceSwiped, .4);
-                    if (itemIndex === this.firstItemIndex && this.infinite) {
-                        this.rotateRight();
-                    }
-                    this.items.forEach((itm, index) => {
-                        if ((itemIndex === this.firstItemIndex || (itemIndex === this.lastItemIndex && distance > 0))
-                            && !this.infinite) {
-                            itm.currentPosition += shortDistance;
-                        } else {
-                            itm.currentPosition += distance;
-                        }
-                        itm.moveTo(itm.currentPosition);
-                    });
-                }));
+        let totalDistanceSwiped = 0;
+        let shortDistanceSwiped = 0;
+        this.subscriptions.add(this.swiper.onSwipeLeft.subscribe((distance: number) => {
+            totalDistanceSwiped += distance;
+            if ((this.currentItemIndex === 0 || (this.currentItemIndex == this.items.length - 1 && totalDistanceSwiped < 0)) && !this.infinite) {
+                shortDistanceSwiped += distance / Math.pow(Math.abs(totalDistanceSwiped), .4);
+                this.moveTo((this.currentItemIndex * -this._width) + shortDistanceSwiped);
+            } else {
+                this.moveTo((this.currentItemIndex * -this._width) + totalDistanceSwiped);
+            }
+        }));
 
-                this.subscriptions.add(item.swiper.onSwipeRight.subscribe((distance: number) => {
-                    totalDistanceSwiped += Math.abs(distance);
-                    let shortDistance = distance / Math.pow(totalDistanceSwiped, .4);
-                    if (itemIndex === this.lastItemIndex && this.infinite) {
-                        this.rotateLeft();
-                    }
-                    this.items.forEach((itm, index) => {
-                        if ((itemIndex === this.lastItemIndex || (itemIndex === this.firstItemIndex && distance < 0))
-                            && !this.infinite) {
-                            itm.currentPosition += shortDistance;
-                        } else {
-                            itm.currentPosition += distance;
-                        }
-                        itm.moveTo(itm.currentPosition);
-                    });
-                }));
+        this.subscriptions.add(this.swiper.onSwipeRight.subscribe((distance: number) => {
+            totalDistanceSwiped += distance;
+            if ((this.currentItemIndex === this.items.length - 1 || (this.currentItemIndex === 0 && totalDistanceSwiped > 0)) && !this.infinite) {
+                shortDistanceSwiped += distance / Math.pow(Math.abs(totalDistanceSwiped), .4);
+                this.moveTo((this.currentItemIndex * -this._width) + shortDistanceSwiped);
+            } else {
+                this.moveTo((this.currentItemIndex * -this._width) + totalDistanceSwiped);
+            }
+        }));
 
-                this.subscriptions.add(item.swiper.swipeLeft.subscribe(() => {
-                    totalDistanceSwiped = 0;
-                    this.slideLeft();
-                }));
+        this.subscriptions.add(this.swiper.swipeLeft.subscribe(() => {
+            totalDistanceSwiped = 0;
+            shortDistanceSwiped = 0;
+            this.slideLeft();
+        }));
 
-                this.subscriptions.add(item.swiper.swipeRight.subscribe(() => {
-                    totalDistanceSwiped = 0;
-                    this.slideRight();
-                }));
+        this.subscriptions.add(this.swiper.swipeRight.subscribe(() => {
+            totalDistanceSwiped = 0;
+            shortDistanceSwiped = 0;
+            this.slideRight();
+        }));
 
-                this.subscriptions.add(item.swiper.onSwipeEnd.subscribe(() => {
-                    totalDistanceSwiped = 0;
-                    this.enableTransition();
-                    this.slideToPrevPosition();
-                }));
+        this.subscriptions.add(this.swiper.onSwipeEnd.subscribe(() => {
+            totalDistanceSwiped = 0;
+            shortDistanceSwiped = 0;
+            this.slideToPrevPosition();
+        }));
 
-                this.subscriptions.add(item.swiper.onSwipeStart.subscribe(() => {
-                    totalDistanceSwiped = 0;
-                    this.disableTransition();
-                }));
-            });
-        } else {
-            this.items.forEach((item, index) => {
-                item.zIndex = this.items.length - index;
-                item.setzIndex(item.zIndex);
-            });
-        }
+        this.subscriptions.add(this.swiper.onSwipeStart.subscribe(() => {
+            totalDistanceSwiped = 0;
+            shortDistanceSwiped = 0;
+            // this.disableTransition();
+        }));
     }
 
     next() {
@@ -181,166 +186,100 @@ export class UICarouselComponent implements OnInit {
     }
 
     goTo(index: number) {
-        if (!this.fade) {
-            this.slideTo(index);
-        } else {
-            this.fadeTo(index);
-        }
-    }
-
-    rotateRightTo(index: number) {
-        while (index !== this.lastItemIndex) {
-            this.rotateRight();
-        }
-    }
-
-    rotateLeftTo(index: number) {
-        while (index !== this.firstItemIndex) {
-            this.rotateLeft();
-        }
+        this.slideTo(index);
     }
 
     slideTo(index: number) {
+        this.enableTransition();
+
         this.onChange.emit((index + this.items.length) % this.items.length);
-        let steps = this.currentItemIndex - index;
-        if (this.infinite) {
-            if (steps > 0) {
-                this.rotateRightTo(this.currentItemIndex);
-            }
-            else if (steps < 0) {
-                this.rotateLeftTo(this.currentItemIndex);
-            }
-        }
-        setTimeout(() => {
-            this.enableTransition();
-            this.items.forEach((item, i) => {
-                item.position += this._width * (steps);
-                item.currentPosition = item.position;
-                item.moveTo(item.position);
-            });
-            this.currentItemIndex = (index + this.items.length) % this.items.length;
-        }, 50);
+        this.moveTo(index * -this._width);
+        this.currentItemIndex = (index + this.items.length) % this.items.length;
     }
 
     slideLeft() {
+        this.enableTransition();
+
         if (!this.infinite) {
             if (this.currentItemIndex === 0) {
                 this.slideToPrevPosition();
                 return;
             }
         }
-        this.slideTo(this.currentItemIndex - 1);
+        this.currentItemIndex -= 1;
+        if (this.currentItemIndex === -1) {
+            this.moveTo(this.currentItemIndex * -this._width);
+            this.currentItemIndex = this.items.length - 1;
+            timer(this.speed - 50).subscribe(() => {
+                this.disableTransition();
+                timer(50).subscribe(() => {
+                    this.moveTo(this.currentItemIndex * -this._width);
+                })
+            })
+        } else {
+            this.moveTo(this.currentItemIndex * -this._width);
+        }
     }
 
     slideRight() {
+        this.enableTransition();
+
         if (!this.infinite) {
             if (this.currentItemIndex === this.items.length - 1) {
                 this.slideToPrevPosition();
                 return;
             }
         }
-        this.slideTo(this.currentItemIndex + 1);
+        this.currentItemIndex += 1;
+        if (this.currentItemIndex === this.items.length) {
+            this.moveTo(this.currentItemIndex * -this._width);
+            this.currentItemIndex = 0;
+            timer(this.speed - 50).subscribe(() => {
+                this.disableTransition();
+                timer(50).subscribe(() => {
+                    this.moveTo(this.currentItemIndex * -this._width);
+                })
+            })
+        } else {
+            this.moveTo(this.currentItemIndex * -this._width);
+        }
+    }
+
+    moveTo(pos: number) {
+        let position = pos + this.offsetPosition;
+        this.renderer.setStyle(this.carouselTrackEl, 'transform', 'translate3d(' + position + 'px, 0px, 0px)');
+        this.renderer.setStyle(this.carouselTrackEl, '-webkit-transform', 'translate3d(' + position + 'px, 0px, 0px)');
+        this.renderer.setStyle(this.carouselTrackEl, '-moz-transform', 'translate3d(' + position + 'px, 0px, 0px)');
+        this.renderer.setStyle(this.carouselTrackEl, '-o-transform', 'translate3d(' + position + 'px, 0px, 0px)');
+        this.renderer.setStyle(this.carouselTrackEl, '-ms-transform', 'translate3d(' + position + 'px, 0px, 0px)');
     }
 
     slideToPrevPosition() {
         this.enableTransition();
-        this.items.forEach(item => {
-            item.currentPosition = item.position;
-            item.moveTo(item.position);
-        })
+        this.moveTo(this.currentItemIndex * -this._width);
     }
 
     disableTransition() {
-        this.items.forEach((item, index) => {
-            item.disableTransition()
-        })
+        this.renderer.removeStyle(this.carouselTrackEl, "transition");
+        this.renderer.removeStyle(this.carouselTrackEl, "-moz-transition");
+        this.renderer.removeStyle(this.carouselTrackEl, "-webkit-transition");
+        this.renderer.removeStyle(this.carouselTrackEl, "-o-transition");
+        this.renderer.removeStyle(this.carouselTrackEl, "-ms-transition");
     }
 
     enableTransition() {
-        this.items.forEach((item, index) => {
-            item.enableTransition()
-        });
+        this.transitionSubject.next();
+        this.renderer.setStyle(this.carouselTrackEl, "transition", `transform ${this.speed}ms ease`);
+        this.renderer.setStyle(this.carouselTrackEl, "-moz-transition", `transform ${this.speed}ms ease`);
+        this.renderer.setStyle(this.carouselTrackEl, "-webkit-transition", `transform ${this.speed}ms ease`);
+        this.renderer.setStyle(this.carouselTrackEl, "-o-transition", `transform ${this.speed}ms ease`);
+        this.renderer.setStyle(this.carouselTrackEl, "-ms-transition", `transform ${this.speed}ms ease`);
     }
 
     getItemByIndex(index: number) {
         return this.items.find((item, i) => {
             return i === index;
         });
-    }
-
-    getIndexByItem(item: UICarouselItemComponent) {
-        return this.items.toArray().indexOf(item);
-    }
-
-    rotateRightNTimes(n: number) {
-        for (let i = 0; i < n; i++) {
-            this.rotateRight();
-        }
-    }
-
-    rotateLeftNTimes(n: number) {
-        for (let i = 0; i < n; i++) {
-            this.rotateLeft();
-        }
-    }
-
-    rotateRight() {
-        let firstItemRef = this.getItemByIndex(this.firstItemIndex);
-        let lastItemRef = this.getItemByIndex(this.lastItemIndex);
-
-        if (!this.fade) {
-            lastItemRef.position = firstItemRef.position - this._width;
-            lastItemRef.currentPosition = lastItemRef.position;
-            lastItemRef.disableTransition();
-            lastItemRef.moveTo(lastItemRef.position);
-            this.firstItemIndex = this.lastItemIndex;
-            this.lastItemIndex = (this.lastItemIndex - 1 + this.items.length) % this.items.length;
-        }
-    }
-
-    rotateLeft() {
-        let firstItemRef = this.getItemByIndex(this.firstItemIndex);
-        let lastItemRef = this.getItemByIndex(this.lastItemIndex);
-        firstItemRef.position = lastItemRef.position + this._width;
-        firstItemRef.currentPosition = firstItemRef.position;
-        firstItemRef.disableTransition();
-        firstItemRef.moveTo(firstItemRef.position);
-        this.lastItemIndex = this.firstItemIndex;
-        this.firstItemIndex = (this.lastItemIndex + 1) % this.items.length;
-    }
-
-    fadeTo(index: number) {
-        this.onChange.emit(index);
-        let firstItem = this.getItemByIndex(this.currentItemIndex);
-        let targetItem = this.getItemByIndex(index);
-        let highestZIndex = this.items.length;
-        targetItem.zIndex = firstItem.zIndex + 1;
-        targetItem.setzIndex(targetItem.zIndex);
-        targetItem.disableTransition();
-        targetItem.fadeIn(this.speed);
-        this.currentItemIndex = index;
-    }
-
-    fadeRight() {
-        let newIndex = (this.currentItemIndex + 1) % this.items.length;
-        this.fadeTo(newIndex)
-        this.currentItemIndex = newIndex;
-    }
-
-    fadeLeft() {
-        let newIndex = (this.currentItemIndex - 1 + this.items.length) % this.items.length;
-        this.fadeTo(newIndex);
-        this.currentItemIndex = newIndex;
-    }
-
-    // is item first visually and not necessary first in the dom (QueryList)
-    isItemFirst(index: number) {
-        return this.firstItemIndex === index;
-    }
-
-    // is item last visually and not necessary last in the dom (QueryList)
-    isItemLast(index: number) {
-        return this.lastItemIndex === index;
     }
 
     @HostListener('window:resize', ['$event'])
@@ -350,39 +289,33 @@ export class UICarouselComponent implements OnInit {
 
     rePosition() {
         if (this.items && this.items.length > 0) {
-            this._width = this.items.first.el.nativeElement.offsetWidth;
-        }
-        let items = this.items.toArray();
-        items.sort((item1, item2) => {
-            if (item1.position > item2.position)
-                return 1;
-            else if (item1.position < item2.position)
-                return -1;
-            else
-                return 0;
-        })
-
-        let currentItem = this.getItemByIndex(this.currentItemIndex);
-        let currentItemIndex = items.indexOf(currentItem);
-        for (let i = currentItemIndex; i < items.length + currentItemIndex; i++) {
-            let item = items[(i + items.length) % items.length];
-            item.position = ((i + items.length) % items.length - currentItemIndex) * this._width;
-            item.disableTransition();
-            item.moveTo(item.position);
+            this._width = this.el.nativeElement.offsetWidth;
+            this.tWidth = this._width * this.thresholdFraction;
+            this.renderer.setStyle(this.carouselTrackEl, 'width', `${(this.items.length * 2) * this._width}px`);
+            if (this.items.length > 1 && this.infinite) {
+                this.offsetPosition = -this._width;
+                this.renderer.setStyle(this.frontClone.instance.el.nativeElement, 'width', this._width + "px");
+                this.renderer.setStyle(this.backClone.instance.el.nativeElement, 'width', this._width + "px");
+            }
+            this.items.map(item => {
+                this.renderer.setStyle(item.el.nativeElement, 'width', this._width + "px");
+            });
+            this.disableTransition();
+            this.moveTo(this.currentItemIndex * -this._width);
         }
     }
 
-    ngOnDestroy(){
+    ngOnDestroy() {
         this.subscriptions.unsubscribe();
     }
 
-    autoPlayFunction(boolean){
-        if(this.autoPlay){
-            if(boolean){
-                this.interval = setInterval(()=>{
+    autoPlayFunction(boolean: boolean) {
+        if (this.autoPlay) {
+            if (boolean) {
+                this.interval = setInterval(() => {
                     this.next();
                 }, this.autoPlaySpeed);
-            }else{
+            } else {
                 clearInterval(this.interval);
             }
         }

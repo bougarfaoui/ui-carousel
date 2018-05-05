@@ -14,6 +14,8 @@ export class SwiperDirective {
     firstSwipeDate = Date.now();
     static canISwipe: boolean = true;
 
+    @Input() threshold: number = 200;
+
     @Output() onSwipeRight: EventEmitter<any> = new EventEmitter<any>();
     @Output() onSwipeLeft: EventEmitter<any> = new EventEmitter<any>();
     @Output() onSwipeStart: EventEmitter<any> = new EventEmitter<any>();
@@ -66,9 +68,9 @@ export class SwiperDirective {
         this.initialPos = this.lastPos = ZERO;
         this.isDown = false;
 
-        if (this.swipeDistance > 100) {
+        if (this.swipeDistance > this.threshold) {
             this.swipeLeft.emit();
-        } else if (this.swipeDistance < -100) {
+        } else if (this.swipeDistance < -this.threshold) {
             this.swipeRight.emit();
         } else {
             this.onSwipeEnd.emit();
@@ -126,9 +128,9 @@ export class SwiperDirective {
     @HostListener("touchend", ["$event"])
     onTouchEnd(event: any) {
         this.initialPos = this.lastPos = ZERO;
-        if (this.swipeDistance > 100) {
+        if (this.swipeDistance > this.threshold) {
             this.swipeLeft.emit();
-        } else if (this.swipeDistance < -100) {
+        } else if (this.swipeDistance < -this.threshold) {
             this.swipeRight.emit();
         } else {
             this.onSwipeEnd.emit();

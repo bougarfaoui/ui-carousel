@@ -16,7 +16,7 @@
 
 ## Example :
 ```html
-    <ui-carousel [infinite]="true" [fade]="false" [speed]="200" >
+    <ui-carousel [infinite]="true" [speed]="200" >
         <ui-carousel-item *ngFor="let item of items">
             <img [ui-lazy-load]="item.img">
         </ui-carousel-item>
@@ -26,15 +26,15 @@
 
 ### Inputs 
 
-Inputs           | Type            | Description                                                  
----------------- | --------------- | -----------                                           
-`infinite`       | `boolean`       | Infinite carousel                     
-`arrows`         | `boolean`       | Show/hide Arrows                                                            
-`dots`           | `boolean`       | Show/hide Dots       
-`speed`          | `number`        | Speed (in milliseconds)       
-`fade`           | `bool`          | Enable fade mode                                                             
-`height`         | `string`        | Height of the carousel (in px or %)             
-`width`          | `string`        | Width of the carousel (in px or %)
+Inputs              | Type            | Description                                                  
+------------------- | --------------- | -----------                                           
+`infinite`          | `boolean`       | Infinite carousel (Defaults to true)               
+`arrows`            | `boolean`       | Show/hide Arrows (Defaults to true)                                                            
+`dots`              | `boolean`       | Show/hide Dots (Defaults to true)       
+`speed`             | `number`        | Speed (in milliseconds) (Defaults to 400)             
+`autoPlay`          | `boolean`       | Enable autoplay (Defaults to true) 
+`autoPlaySpeed`     | `number`        | Autoplay interval (in milliseconds) (Defaults to 5000)
+`thresholdFraction` | `number`        | Swipe distance to trigger slide change
 
 ### Directives : 
 
