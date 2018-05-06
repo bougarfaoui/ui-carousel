@@ -210,6 +210,7 @@ export class UICarouselComponent implements OnInit {
         if (this.currentItemIndex === -1) {
             this.moveTo(this.currentItemIndex * -this._width);
             this.currentItemIndex = this.items.length - 1;
+            this.onChange.emit(this.currentItemIndex);
             timer(this.speed - 50).subscribe(() => {
                 this.disableTransition();
                 timer(50).subscribe(() => {
@@ -217,6 +218,7 @@ export class UICarouselComponent implements OnInit {
                 })
             })
         } else {
+            this.onChange.emit(this.currentItemIndex);
             this.moveTo(this.currentItemIndex * -this._width);
         }
     }
@@ -234,6 +236,7 @@ export class UICarouselComponent implements OnInit {
         if (this.currentItemIndex === this.items.length) {
             this.moveTo(this.currentItemIndex * -this._width);
             this.currentItemIndex = 0;
+            this.onChange.emit(this.currentItemIndex);
             timer(this.speed - 50).subscribe(() => {
                 this.disableTransition();
                 timer(50).subscribe(() => {
@@ -241,6 +244,7 @@ export class UICarouselComponent implements OnInit {
                 })
             })
         } else {
+            this.onChange.emit(this.currentItemIndex);
             this.moveTo(this.currentItemIndex * -this._width);
         }
     }

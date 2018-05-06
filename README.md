@@ -1,18 +1,16 @@
 ﻿# 🌀ui-carousel 
 
-✨  Carousel component for angular 4 and 5
+✨  Carousel component for Angular
 
 ## 💥 Features :
 - 👌 Supports touch events
 - ⚡️ Image lazy loading
 - 😈 No third party library
 - 😎 Easy to use API
-## Install
-``` npm install ui-carousel --save ```
 
 ## Demo :
 
-## [Demo](https://bougarfaoui.github.io/ui-carousel/)
+## [Demo](https://joscmw95.github.io/ui-carousel/index.html)
 
 ## Example :
 ```html

@@ -91,6 +91,8 @@ ui-carousel{
     margin-left: 10px;
 }
 
-img{
+.responsive-img {
+    height: 300px;
     width: 100%;
+    object-fit: cover;
 }
