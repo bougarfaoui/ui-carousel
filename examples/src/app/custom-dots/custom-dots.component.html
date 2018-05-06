@@ -1,7 +1,7 @@
 <div style="text-align:center; margin:10px;font-size: 25px; ">
     Custom dots
 </div>
-<div style="max-width: 768px; margin:auto">
+<div style="max-width: 768px; margin: auto; position: relative;">
     <ui-carousel #uiCarousel [infinite]="true" [speed]="200" height="300px" width="700px" [dots]="false">
         <ui-carousel-item>
             <img src="./assets/3.jpg" class="responsive-img" alt="" draggable="false">
@@ -14,7 +14,7 @@
         </ui-carousel-item>
     </ui-carousel>
     <div class="dots">
-        <div class="dot" (click)="uiCarousel.goTo(2)"></div>
+        <div class="dot" (click)="uiCarousel.goTo(0)"></div>
         <div class="dot" (click)="uiCarousel.goTo(1)"></div>
         <div class="dot" (click)="uiCarousel.goTo(2)"></div>
     </div>

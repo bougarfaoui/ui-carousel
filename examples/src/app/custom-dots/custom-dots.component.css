@@ -18,10 +18,10 @@ ui-carousel {
 .dots {
     height: 4px;
     margin: auto;
-    bottom: 20px;
+    bottom: 10px;
     box-sizing: border-box;
     width: 100%;
-    position: relative;
+    position: absolute;
     padding: 0 10px;
     display: -webkit-box;
     display: -moz-box;
@@ -36,13 +36,18 @@ ui-carousel {
 .dot {
     height: 100%;
     width: 200px;
-    background: rgba(256, 256, 256, 0.7);
+    background: rgba(256, 256, 256, 0.6);
     padding: 0 3px;
     border-radius: 1px;
 }
 
 .dot:hover {
+    background: rgba(256, 256, 256, 0.8);
     cursor: pointer;
+}
+
+.dot.active {
+    background: rgba(256, 256, 256, 0.8);
 }
 
 .responsive-img {
