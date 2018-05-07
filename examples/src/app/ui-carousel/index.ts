@@ -25,7 +25,8 @@ import { ArrowComponent } from './arrow/arrow.component';
         SwiperDirective,
         UILazyloadDirective
     ],
+    entryComponents: [UICarouselItemComponent],
     providers: [
-    ],
+    ]
 })
 export class UICarouselModule { }
