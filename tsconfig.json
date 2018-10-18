@@ -9,12 +9,12 @@
         "experimentalDecorators": true,
         "sourceMap": true,
         "noImplicitAny": true,
-        "outDir": "./dist",
+        "outDir": "./dist/out-tsc",
         "typeRoots": [
             "./node_modules/@types"
         ]
     },
     "files": [
-        "./index.ts"
+        "./src/index.ts"
     ]
 }

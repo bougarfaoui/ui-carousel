@@ -5,29 +5,32 @@ import {
     ContentChildren,
     Input,
     Output,
+    HostBinding,
     HostListener,
     EventEmitter,
     ElementRef
 } from '@angular/core';
 
-import { Subject } from 'rxjs/Subject';
-import { Subscription } from 'rxjs/Subscription';
+import {Observable} from 'rxjs/Observable';
+import {Subject} from 'rxjs/Subject';
+import {Subscription} from 'rxjs/Subscription';
 import 'rxjs/add/operator/throttleTime';
 
-import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.component';
+import {UICarouselItemComponent} from '../ui-carousel-item/ui-carousel-item.component';
 
 @Component({
     selector: 'ui-carousel',
-    template : `
-    <div (mouseenter)="(autoPlay)?autoPlayFunction(false):null" (mouseleave)="(autoPlay)?autoPlayFunction(true):null">
-        <ng-content></ng-content>
-        <dots *ngIf="isDotsVisible" [dots-count]="items.length" position="middle" [active-dot]="currentItemIndex" (on-click)="goTo($event)"></dots>
-        <arrow *ngIf="isArrowsVisible" dir="left" (on-click)="prev()" [disabled]="false"></arrow>
-        <arrow *ngIf="isArrowsVisible" dir="right" (on-click)="next()" [disabled]="false"></arrow>
-    </div>
+    template: `
+        <div (mouseenter)="(autoPlay)?autoPlayFunction(false):null" (mouseleave)="(autoPlay)?autoPlayFunction(true):null">
+            <ng-content></ng-content>
+            <dots *ngIf="isDotsVisible" [dots-count]="items.length" position="middle" [active-dot]="currentItemIndex"
+                  (on-click)="goTo($event)"></dots>
+            <arrow *ngIf="isArrowsVisible" dir="left" (on-click)="prev()" [disabled]="false"></arrow>
+            <arrow *ngIf="isArrowsVisible" dir="right" (on-click)="next()" [disabled]="false"></arrow>
+        </div>
     `,
     styles: [`
-        :host{
+        :host {
             display: block;
             overflow: hidden;
             position: relative;
@@ -37,10 +40,10 @@ import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.co
 export class UICarouselComponent implements OnInit {
     private nextSubject: Subject<any> = new Subject<any>();
     private prevSubject: Subject<any> = new Subject<any>();
-    private subscriptions: Subscription = new Subscription();
+    private subscriptions = new Subscription();
     @Output() onChange: EventEmitter<any> = new EventEmitter<any>();
-    @Input() height: string = "300px";
-    @Input() width: string = "100%";
+    @Input() height: string = '300px';
+    @Input() width: string = '100%';
     @Input() speed: number;
     @Input() autoPlay: boolean = true;
     @Input() autoPlaySpeed: number;
@@ -54,19 +57,20 @@ export class UICarouselComponent implements OnInit {
 
     private _width: number;
     currentItemIndex: number = 0;
-    interval:any;
+    interval: any;
 
     private firstItemIndex: number; // the visual index of item and not necessary the index in the DOM
     private lastItemIndex: number; // ..
 
     constructor(
         private el: ElementRef
-    ) { }
+    ) {
+    }
 
     ngOnInit() {
         this.speed = this.speed || 500;
         this.autoPlaySpeed = this.autoPlaySpeed || 1500;
-        if(this.autoPlay){
+        if (this.autoPlay) {
             this.autoPlayFunction(true);
         }
         this.subscriptions.add(this.nextSubject.throttleTime(this.speed).subscribe(() => {
@@ -370,21 +374,19 @@ export class UICarouselComponent implements OnInit {
         }
     }
 
-    ngOnDestroy(){
+    ngOnDestroy() {
         this.subscriptions.unsubscribe();
-        clearInterval(this.interval);
     }
 
-    autoPlayFunction(boolean){
-        if(this.autoPlay){
-            if(boolean){
-                this.interval = setInterval(()=>{
+    autoPlayFunction(boolean) {
+        if (this.autoPlay) {
+            if (boolean) {
+                this.interval = setInterval(() => {
                     this.next();
                 }, this.autoPlaySpeed);
-            }else{
+            } else {
                 clearInterval(this.interval);
             }
         }
     }
 }
-
