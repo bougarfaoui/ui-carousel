@@ -372,6 +372,7 @@ export class UICarouselComponent implements OnInit {
 
     ngOnDestroy(){
         this.subscriptions.unsubscribe();
+        clearInterval(this.interval);
     }
 
     autoPlayFunction(boolean){
