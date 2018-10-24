@@ -48,7 +48,7 @@ import { UILazyloadDirective } from '../directives/ui-lazy-load.directive';
         .ui-carousel-item{
             height: 100%;
             width: 100%;
-            background: orange;
+            background: transparent;
             position: absolute;    
             overflow: hidden;
         }
