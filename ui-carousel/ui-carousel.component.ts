@@ -11,10 +11,8 @@ import {
     ElementRef
 } from '@angular/core';
 
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
-import { Subscription } from 'rxjs/Subscription';
-import 'rxjs/add/operator/throttleTime';
+import { Subject, Subscription, Observable } from 'rxjs';
+import { throttleTime } from 'rxjs/operators'
 
 import { UICarouselItemComponent } from '../ui-carousel-item/ui-carousel-item.component';
 
@@ -71,14 +69,14 @@ export class UICarouselComponent implements OnInit {
         if(this.autoPlay){
             this.autoPlayFunction(true);
         }
-        this.subscriptions.add(this.nextSubject.throttleTime(this.speed).subscribe(() => {
+        this.subscriptions.add(this.nextSubject.pipe(throttleTime(this.speed)).subscribe(() => {
             if (!this.fade) {
                 this.slideLeft();
             } else {
                 this.fadeLeft();
             }
         }));
-        this.subscriptions.add(this.prevSubject.throttleTime(this.speed).subscribe(() => {
+        this.subscriptions.add(this.prevSubject.pipe(throttleTime(this.speed)).subscribe(() => {
             if (!this.fade) {
                 this.slideRight();
             } else {
